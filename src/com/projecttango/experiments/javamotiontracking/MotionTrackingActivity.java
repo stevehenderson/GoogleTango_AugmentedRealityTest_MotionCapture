@@ -70,7 +70,7 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
     private int count;
     private float mDeltaTime;
     private boolean mIsAutoRecovery;
-    private MTGLRenderer mRenderer;
+    private GLClearRenderer mRenderer;
     private GLSurfaceView mGLView;
     private SurfaceHolder surfaceHolder;
 
@@ -120,7 +120,7 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
         mConfig.putBoolean(TangoConfig.KEY_BOOLEAN_MOTIONTRACKING, true);
 
         // Configure OpenGL renderer
-        mRenderer = new MTGLRenderer();  
+        mRenderer = new GLClearRenderer();
         mGLView.setEGLContextClientVersion(2);
         mGLView.setRenderer(mRenderer);
         mGLView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
@@ -183,10 +183,7 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
                 // Update the OpenGL renderable objects with the new Tango Pose
                 // data
                 float[] translation = pose.getTranslationAsFloats();
-                mRenderer.getTrajectory().updateTrajectory(translation);
-                mRenderer.getModelMatCalculator().updateModelMatrix(translation,
-                        pose.getRotationAsFloats());
-                mRenderer.updateViewMatrix();
+                
                 mGLView.requestRender();
 
                 // Update the UI with TangoPose information
@@ -288,13 +285,13 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
     public void onClick(View v) {
         switch (v.getId()) {
         case R.id.first_person_button:
-            mRenderer.setFirstPersonView();
+            //mRenderer.setFirstPersonView();
             break;
         case R.id.top_down_button:
-            mRenderer.setTopDownView();
+            //mRenderer.setTopDownView();
             break;
         case R.id.third_person_button:
-            mRenderer.setThirdPersonView();
+            //mRenderer.setThirdPersonView();
             break;
         case R.id.resetmotion:
             motionReset();
@@ -307,7 +304,7 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        return mRenderer.onTouchEvent(event);
+        return false; 
     }
 
     private void setUpExtrinsics() {
@@ -317,8 +314,8 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
         framePair.baseFrame = TangoPoseData.COORDINATE_FRAME_IMU;
         framePair.targetFrame = TangoPoseData.COORDINATE_FRAME_DEVICE;
         device2IMUPose = mTango.getPoseAtTime(0.0, framePair);
-        mRenderer.getModelMatCalculator().SetDevice2IMUMatrix(
-                device2IMUPose.getTranslationAsFloats(), device2IMUPose.getRotationAsFloats());
+       // mRenderer.getModelMatCalculator().SetDevice2IMUMatrix(
+       //         device2IMUPose.getTranslationAsFloats(), device2IMUPose.getRotationAsFloats());
 
         // Get color camera to imu matrix.
         TangoPoseData color2IMUPose = new TangoPoseData();
@@ -326,8 +323,8 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
         framePair.targetFrame = TangoPoseData.COORDINATE_FRAME_CAMERA_COLOR;
         color2IMUPose = mTango.getPoseAtTime(0.0, framePair);
 
-        mRenderer.getModelMatCalculator().SetColorCamera2IMUMatrix(
-                color2IMUPose.getTranslationAsFloats(), color2IMUPose.getRotationAsFloats());
+       // mRenderer.getModelMatCalculator().SetColorCamera2IMUMatrix(
+        //        color2IMUPose.getTranslationAsFloats(), color2IMUPose.getRotationAsFloats());
     }
 
 	@Override
