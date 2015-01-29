@@ -76,7 +76,7 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
     private GLClearRenderer mRenderer;
     private GLSurfaceView mGLView;
     private SurfaceHolder surfaceHolder;
-    private TangoCameraView mCameraView;
+    private CameraView mCameraView;
 
  
 
@@ -135,12 +135,14 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
         
         // mGLView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
         // Now also create a view which contains the camera preview...
-        mCameraView = new TangoCameraView( this , mTango);
+        //mCameraView = new TangoCameraView( this , mTango);
+        mCameraView = new CameraView( this);
+        
         // ...and add it, wrapping the full screen size.
         addContentView( mCameraView, new LayoutParams( LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT ) );
         
       
-       mTango.connect(mConfig);
+     
 
         // The Auto-Recovery ToggleButton sets a boolean variable to determine
         // if the
