@@ -53,7 +53,7 @@ import java.util.ArrayList;
  * service and propagation of Tango pose data to OpenGL and Layout views. OpenGL rendering logic is
  * delegated to the {@link MTGLRenderer} class.
  */
-public class MotionTrackingActivity extends Activity implements View.OnClickListener  {
+public class MotionTrackingActivity extends Activity implements View.OnClickListener, SurfaceHolder.Callback  {
 
     private static final String TAG = MotionTrackingActivity.class.getSimpleName();
     private static final int SECS_TO_MILLISECS = 1000;
@@ -76,6 +76,8 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
     private GLClearRenderer mRenderer;
     private GLSurfaceView mGLView;
     private SurfaceHolder surfaceHolder;
+    private SurfaceView surfaceView;
+    
     private CameraView mCameraView;
 
  
@@ -120,6 +122,21 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
         mConfig = mTango.getConfig(TangoConfig.CONFIG_TYPE_CURRENT);
         mConfig.putBoolean(TangoConfig.KEY_BOOLEAN_MOTIONTRACKING, true);
         
+        
+        try {
+            setTangoListeners();
+        } catch (TangoErrorException e) {
+            Toast.makeText(getApplicationContext(), R.string.TangoError, Toast.LENGTH_SHORT).show();
+        } catch (SecurityException e) {
+            Toast.makeText(getApplicationContext(), R.string.motiontrackingpermission,
+                    Toast.LENGTH_SHORT).show();
+        }
+        
+       
+        
+        
+        
+        
         // OpenGL view where all of the graphics are drawn
         mGLView = (GLSurfaceView) findViewById(R.id.gl_surface_view);
        // mGLView = new GLSurfaceView(this);
@@ -136,11 +153,14 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
         // mGLView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
         // Now also create a view which contains the camera preview...
         //mCameraView = new TangoCameraView( this , mTango);
-        mCameraView = new CameraView( this);
+        //mCameraView = new CameraView( this);
         
         // ...and add it, wrapping the full screen size.
-        addContentView( mCameraView, new LayoutParams( LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT ) );
-        
+        //addContentView( mCameraView, new LayoutParams( LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT ) );
+        surfaceView = new SurfaceView(this);
+        surfaceHolder = surfaceView.getHolder();
+        surfaceHolder.addCallback(this);
+        addContentView( surfaceView, new LayoutParams( LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT ) );
       
      
 
@@ -169,6 +189,55 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
 
     }
 
+    
+
+    private void motionReset() {
+        mTango.resetMotionTracking();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        
+    }
+
+    protected void onResume() {
+        super.onResume();
+       
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+        case R.id.first_person_button:
+            //mRenderer.setFirstPersonView();
+            break;
+        case R.id.top_down_button:
+            //mRenderer.setTopDownView();
+            break;
+        case R.id.third_person_button:
+            //mRenderer.setThirdPersonView();
+            break;
+        case R.id.resetmotion:
+            motionReset();
+            break;
+        default:
+            Log.w(TAG, "Unknown button click");
+            return;
+        }
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        return false; 
+    }
+
+    
     /**
      * Set up the TangoConfig and the listeners for the Tango service, then begin using the Motion
      * Tracking API. This is called in response to the user clicking the 'Start' Button.
@@ -217,6 +286,7 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
                                 + threeDec.format(pose.rotation[3]) + "] ";
 
                         // Display pose data on screen in TextViews
+                        Log.i(TAG,translationString);
                         mPoseTextView.setText(translationString);
                         mQuatTextView.setText(quaternionString);
                         mPoseCountTextView.setText(Integer.toString(count));
@@ -251,81 +321,8 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
         });
     }
 
-    private void motionReset() {
-        mTango.resetMotionTracking();
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        try {
-            mTango.disconnect();
-            Log.i(TAG, "tango disconnected 261!!!");
-        } catch (TangoErrorException e) {
-            Toast.makeText(getApplicationContext(), R.string.TangoError, Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    protected void onResume() {
-        super.onResume();
-        try {
-            setTangoListeners();
-        } catch (TangoErrorException e) {
-            Toast.makeText(getApplicationContext(), R.string.TangoError, Toast.LENGTH_SHORT).show();
-        } catch (SecurityException e) {
-            Toast.makeText(getApplicationContext(), R.string.motiontrackingpermission,
-                    Toast.LENGTH_SHORT).show();
-        }
-        try {
-            mTango.connect(mConfig);
-            Log.i(TAG, "tango connected 279!!!");
-        } catch (TangoOutOfDateException e) {
-            Toast.makeText(getApplicationContext(), R.string.TangoOutOfDateException,
-                    Toast.LENGTH_SHORT).show();
-        } catch (TangoErrorException e) {
-            Toast.makeText(getApplicationContext(), R.string.TangoError, Toast.LENGTH_SHORT).show();
-        }
-        try {
-            setUpExtrinsics();
-        } catch (TangoErrorException e) {
-            Toast.makeText(getApplicationContext(), R.string.TangoError, Toast.LENGTH_SHORT).show();
-        } catch (SecurityException e) {
-            Toast.makeText(getApplicationContext(), R.string.motiontrackingpermission,
-                    Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-    }
-
-    @Override
-    public void onClick(View v) {
-        switch (v.getId()) {
-        case R.id.first_person_button:
-            //mRenderer.setFirstPersonView();
-            break;
-        case R.id.top_down_button:
-            //mRenderer.setTopDownView();
-            break;
-        case R.id.third_person_button:
-            //mRenderer.setThirdPersonView();
-            break;
-        case R.id.resetmotion:
-            motionReset();
-            break;
-        default:
-            Log.w(TAG, "Unknown button click");
-            return;
-        }
-    }
-
-    @Override
-    public boolean onTouchEvent(MotionEvent event) {
-        return false; 
-    }
-
+    
+    
     private void setUpExtrinsics() {
         // Get device to imu matrix.
         TangoPoseData device2IMUPose = new TangoPoseData();
@@ -345,6 +342,31 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
        // mRenderer.getModelMatCalculator().SetColorCamera2IMUMatrix(
         //        color2IMUPose.getTranslationAsFloats(), color2IMUPose.getRotationAsFloats());
     }
+
+	@Override
+	public void surfaceCreated(SurfaceHolder holder) {
+		Surface surface = holder.getSurface();
+        if (surface.isValid()) {
+       	 TangoConfig config = new TangoConfig();
+       	 config =  mTango.getConfig(TangoConfig.CONFIG_TYPE_CURRENT);
+       	 mTango.connectSurface(0, surface);
+       	 mTango.connect(config);
+        }
+		
+	}
+
+	@Override
+	public void surfaceChanged(SurfaceHolder holder, int format, int width,
+			int height) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void surfaceDestroyed(SurfaceHolder holder) {
+		mTango.disconnectSurface(0);
+		
+	}
 
 
 	
