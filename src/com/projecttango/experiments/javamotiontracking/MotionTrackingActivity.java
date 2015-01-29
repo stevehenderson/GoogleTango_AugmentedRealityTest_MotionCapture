@@ -37,8 +37,11 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.View;
+import android.view.ViewGroup.LayoutParams;
 import android.widget.Button;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -50,7 +53,7 @@ import java.util.ArrayList;
  * service and propagation of Tango pose data to OpenGL and Layout views. OpenGL rendering logic is
  * delegated to the {@link MTGLRenderer} class.
  */
-public class MotionTrackingActivity extends Activity implements View.OnClickListener, SurfaceHolder.Callback  {
+public class MotionTrackingActivity extends Activity implements View.OnClickListener  {
 
     private static final String TAG = MotionTrackingActivity.class.getSimpleName();
     private static final int SECS_TO_MILLISECS = 1000;
@@ -73,11 +76,15 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
     private GLClearRenderer mRenderer;
     private GLSurfaceView mGLView;
     private SurfaceHolder surfaceHolder;
+    private TangoCameraView mCameraView;
+
+ 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_motion_tracking);
+        
         Intent intent = getIntent();
         mIsAutoRecovery = intent.getBooleanExtra(StartActivity.KEY_MOTIONTRACKING_AUTORECOVER,
                 false);
@@ -87,6 +94,9 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
         mPoseCountTextView = (TextView) findViewById(R.id.posecount);
         mDeltaTextView = (TextView) findViewById(R.id.deltatime);
         mTangoEventTextView = (TextView) findViewById(R.id.tangoevent);
+     
+        
+        
         // Buttons for selecting camera view and Set up button click listeners
         findViewById(R.id.first_person_button).setOnClickListener(this);
         findViewById(R.id.third_person_button).setOnClickListener(this);
@@ -100,15 +110,6 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
         mTangoServiceVersionTextView = (TextView) findViewById(R.id.version);
         mApplicationVersionTextView = (TextView) findViewById(R.id.appversion);
 
-        // OpenGL view where all of the graphics are drawn
-        mGLView = (GLSurfaceView) findViewById(R.id.gl_surface_view);
-        
-        //ADDED these two
-        surfaceHolder = mGLView.getHolder();
-        surfaceHolder.addCallback(this);
-        
-        surfaceHolder.setFormat(PixelFormat.TRANSLUCENT);
-
         // Set up button click listeners
         mMotionResetButton.setOnClickListener(this);
         
@@ -118,14 +119,28 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
         mConfig = new TangoConfig();
         mConfig = mTango.getConfig(TangoConfig.CONFIG_TYPE_CURRENT);
         mConfig.putBoolean(TangoConfig.KEY_BOOLEAN_MOTIONTRACKING, true);
+        
+        // OpenGL view where all of the graphics are drawn
+        mGLView = (GLSurfaceView) findViewById(R.id.gl_surface_view);
+       // mGLView = new GLSurfaceView(this);
+        mGLView.setEGLConfigChooser(8,8,8,8,16,0);
+        //ADDED these two
+        surfaceHolder = mGLView.getHolder();
+        surfaceHolder.setFormat(PixelFormat.TRANSLUCENT);
 
         // Configure OpenGL renderer
         mRenderer = new GLClearRenderer();
-        mGLView.setEGLContextClientVersion(2);
+        //mGLView.setEGLContextClientVersion(2);
         mGLView.setRenderer(mRenderer);
-        mGLView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
         
-       
+        // mGLView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
+        // Now also create a view which contains the camera preview...
+        mCameraView = new TangoCameraView( this , mTango);
+        // ...and add it, wrapping the full screen size.
+        addContentView( mCameraView, new LayoutParams( LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT ) );
+        
+      
+       mTango.connect(mConfig);
 
         // The Auto-Recovery ToggleButton sets a boolean variable to determine
         // if the
@@ -184,7 +199,7 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
                 // data
                 float[] translation = pose.getTranslationAsFloats();
                 
-                mGLView.requestRender();
+                //mGLView.requestRender();
 
                 // Update the UI with TangoPose information
                 runOnUiThread(new Runnable() {
@@ -243,6 +258,7 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
         super.onPause();
         try {
             mTango.disconnect();
+            Log.i(TAG, "tango disconnected 261!!!");
         } catch (TangoErrorException e) {
             Toast.makeText(getApplicationContext(), R.string.TangoError, Toast.LENGTH_SHORT).show();
         }
@@ -260,6 +276,7 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
         }
         try {
             mTango.connect(mConfig);
+            Log.i(TAG, "tango connected 279!!!");
         } catch (TangoOutOfDateException e) {
             Toast.makeText(getApplicationContext(), R.string.TangoOutOfDateException,
                     Toast.LENGTH_SHORT).show();
@@ -327,31 +344,6 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
         //        color2IMUPose.getTranslationAsFloats(), color2IMUPose.getRotationAsFloats());
     }
 
-	@Override
-	public void surfaceCreated(SurfaceHolder holder) {
-		
-		// TODO Auto-generated method stub
-		Surface surface = holder.getSurface();
-        if (surface.isValid()) {
-        	Log.i(TAG, "!!!!!surfaceCreated!!!!!");
-       	 	TangoConfig config = new TangoConfig();
-       	 	config =  mTango.getConfig(TangoConfig.CONFIG_TYPE_CURRENT);
-       	 	mTango.connectSurface(0, surface);
-       	 	//mTango.connect(config);
-        }
-	}
-
-	@Override
-	public void surfaceChanged(SurfaceHolder holder, int format, int width,
-			int height) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void surfaceDestroyed(SurfaceHolder holder) {
-		mTango.disconnectSurface(0);
-	}
 
 	
 
