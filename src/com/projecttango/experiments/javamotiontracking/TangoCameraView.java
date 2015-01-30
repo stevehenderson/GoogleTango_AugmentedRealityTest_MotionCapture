@@ -53,6 +53,7 @@ public class TangoCameraView extends SurfaceView implements SurfaceHolder.Callba
 		//camera = Camera.open();
 		Surface surface = holder.getSurface();
 		if (surface.isValid()) {
+			///////////THIS IS A KEY LINE WHERE TANGO SURFACE IS MAPPED///////////////
 			mTango.connectSurface(0, surface);
 			Log.i(TAG, "tango surface connected :)");
 			//mTango.connect(config);

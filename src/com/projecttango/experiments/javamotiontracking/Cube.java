@@ -6,6 +6,12 @@ import java.nio.FloatBuffer;
 
 import javax.microedition.khronos.opengles.GL10;
 
+/**
+ * An OPenGL Cube object
+ * 
+ * @author henderso
+ *
+ */
 class Cube {
     
     private FloatBuffer mVertexBuffer;
