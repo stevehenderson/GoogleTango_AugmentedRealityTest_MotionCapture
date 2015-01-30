@@ -80,7 +80,7 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
     
     private CameraView mCameraView;
 
- 
+    boolean first_initialized = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -198,11 +198,41 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
     @Override
     protected void onPause() {
         super.onPause();
+        Log.i(TAG, "OnPause");
+        try {
+            mTango.disconnect();
+            Log.i(TAG,"Pausing..TANGO disconnected");
+        } catch (TangoErrorException e) {
+            Toast.makeText(getApplicationContext(), R.string.TangoError, Toast.LENGTH_SHORT).show();
+        }
         
     }
 
     protected void onResume() {
         super.onResume();
+        Log.i(TAG, "OnResume");
+        
+        try {
+            //setTangoListeners();
+        } catch (TangoErrorException e) {
+            Log.e(TAG,e.toString());
+        } catch (SecurityException e) {
+        	Log.e(TAG,e.toString());
+        }
+        try {           
+        	if(first_initialized)mTango.connect(mConfig);
+        } catch (TangoOutOfDateException e) {
+        	Log.e(TAG,e.toString());
+        } catch (TangoErrorException e) {
+        	Log.e(TAG,e.toString());
+        }
+        try {
+           //setUpExtrinsics();
+        } catch (TangoErrorException e) {
+        	Log.e(TAG,e.toString());
+        } catch (SecurityException e) {
+        	Log.e(TAG,e.toString());
+        }
        
     }
 
@@ -350,7 +380,9 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
        	 TangoConfig config = new TangoConfig();
        	 config =  mTango.getConfig(TangoConfig.CONFIG_TYPE_CURRENT);
        	 mTango.connectSurface(0, surface);
+       	 first_initialized=true;
        	 mTango.connect(config);
+       	 
         }
 		
 	}

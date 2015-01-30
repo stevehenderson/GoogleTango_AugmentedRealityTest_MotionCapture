@@ -17,12 +17,7 @@
     android:layout_width="wrap_content"
     android:layout_height="wrap_content" >
 
-    <android.opengl.GLSurfaceView
-        android:id="@+id/gl_surface_view"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        android:layout_gravity="top" />
-    
+   
      
 
     <LinearLayout
@@ -200,5 +195,12 @@
         android:layout_alignParentLeft="true"
         android:layout_marginLeft="5dp"
         android:text="@string/resetmotiontracking" />
+    
+     <android.opengl.GLSurfaceView
+        android:id="@+id/gl_surface_view"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_gravity="top" />
+    
 
 </RelativeLayout>
