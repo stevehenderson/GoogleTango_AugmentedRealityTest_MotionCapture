@@ -85,17 +85,28 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
 	private int count;
 	private float mDeltaTime;
 	private boolean mIsAutoRecovery;
-	private GLClearRenderer mRenderer;
+	//private GLClearRenderer mRenderer;
+	private MainRenderer mMainRenderer;
+	private GLClearRenderer mClearRenderer;
+	
 	private GLSurfaceView mGLView;
 	private SurfaceHolder surfaceHolder;
 	private SurfaceView surfaceView;
 
 	boolean first_initialized = false;
 
-	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		
+
+	/*
+	 * Static primitive to set the OPENGL Version.
+	 * Values = {1.0, 2.0}
+	 */
+	private final static double OPENGL_VERSION = 2.0;
+
+	/**
+	 * Set up the activity using OpenGL 10
+	 */
+	private void setUpOpenGL10() {
+
 		///////////////////////
 		//Create GLSurface
 		///////////////////////
@@ -106,9 +117,9 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
 		surfaceHolder = mGLView.getHolder();
 		surfaceHolder.setFormat(PixelFormat.TRANSLUCENT);
 		// Configure OpenGL renderer
-		mRenderer = new GLClearRenderer();
+		mClearRenderer = new GLClearRenderer();
 		//mGLView.setEGLContextClientVersion(2);
-		mGLView.setRenderer(mRenderer);
+		mGLView.setRenderer(mClearRenderer);
 		setContentView(mGLView);
 
 		////////////////////////////////////
@@ -184,17 +195,135 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
 			mConfig.putBoolean(TangoConfig.KEY_BOOLEAN_AUTORECOVERY, false);
 			Log.i(TAG, "Auto Reset Off!!!");
 		}
+		
+		mApplicationVersionTextView.setText("OpenGL 1.0");
 
-		PackageInfo packageInfo;
-		try {
-			packageInfo = this.getPackageManager().getPackageInfo(this.getPackageName(), 0);
-			mApplicationVersionTextView.setText(packageInfo.versionName);
-		} catch (NameNotFoundException e) {
-			e.printStackTrace();
-		}
-
+	
 		// Display the library version for debug purposes
 		mTangoServiceVersionTextView.setText(mConfig.getString("tango_service_library_version"));
+
+	}
+
+
+
+	/**
+	 * Set up the activity using OpenGL 20
+	 */
+	private void setUpOpenGL20() {
+
+		///////////////////////
+		//Create GLSurface
+		///////////////////////
+		// OpenGL view where all of the graphics are drawn
+		//mGLView = (GLSurfaceView) findViewById(R.id.gl_surface_view);
+		mGLView = new GLSurfaceView(this);
+		mGLView.setEGLContextClientVersion(2);
+		//mGLView.setZOrderOnTop(true);
+		mGLView.setEGLConfigChooser(8,8,8,8,16,0);
+		surfaceHolder = mGLView.getHolder();
+		surfaceHolder.setFormat(PixelFormat.TRANSLUCENT);
+		// Configure OpenGL renderer
+		//mRenderer = new GLClearRenderer();
+		mMainRenderer = new MainRenderer(this);
+
+
+		mGLView.setRenderer(mMainRenderer);
+		mGLView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
+		//setContentView(mGLView);
+
+		////////////////////////////////////
+		// Instantiate the Tango service
+		///////////////////////////////////
+		mTango = new Tango(this);
+		// Create a new Tango Configuration and enable the MotionTrackingActivity API
+		mConfig = new TangoConfig();
+		mConfig = mTango.getConfig(TangoConfig.CONFIG_TYPE_CURRENT);
+		mConfig.putBoolean(TangoConfig.KEY_BOOLEAN_MOTIONTRACKING, true);
+
+		try {
+			setTangoListeners();
+		} catch (TangoErrorException e) {
+			Toast.makeText(getApplicationContext(), R.string.TangoError, Toast.LENGTH_SHORT).show();
+		} catch (SecurityException e) {
+			Toast.makeText(getApplicationContext(), R.string.motiontrackingpermission,
+					Toast.LENGTH_SHORT).show();
+		}
+
+		//////////////////////////
+		// Create Camera Surface
+		//////////////////////////
+		surfaceView = new SurfaceView(this);
+		surfaceHolder = surfaceView.getHolder();
+		surfaceHolder.addCallback(this);
+		//setContentView(mGLView);
+		//addContentView( surfaceView, new LayoutParams( LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT ) );
+		setContentView(surfaceView);
+		addContentView( mGLView, new LayoutParams( LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT ) );
+
+
+
+		/////////////////////////
+		//Create UI Objects 
+		////////////////////////
+		LayoutInflater inflater = getLayoutInflater();
+		View tmpView;
+		tmpView = inflater.inflate(R.layout.activity_motion_tracking, null);
+		getWindow().addContentView(tmpView, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT,
+				ViewGroup.LayoutParams.FILL_PARENT)); 
+
+		Intent intent = getIntent();
+		mIsAutoRecovery = intent.getBooleanExtra(StartActivity.KEY_MOTIONTRACKING_AUTORECOVER,
+				false);
+		// Text views for displaying translation and rotation data
+		mPoseTextView = (TextView) findViewById(R.id.pose);
+		mQuatTextView = (TextView) findViewById(R.id.quat);
+		mPoseCountTextView = (TextView) findViewById(R.id.posecount);
+		mDeltaTextView = (TextView) findViewById(R.id.deltatime);
+		mTangoEventTextView = (TextView) findViewById(R.id.tangoevent);
+
+		// Buttons for selecting camera view and Set up button click listeners
+		//NOTE:  BUTTONS ARE NOT USED IN THE CODE
+		findViewById(R.id.first_person_button).setOnClickListener(this);
+		findViewById(R.id.third_person_button).setOnClickListener(this);
+		findViewById(R.id.top_down_button).setOnClickListener(this);
+
+		// Button to reset motion tracking
+		mMotionResetButton = (Button) findViewById(R.id.resetmotion);
+
+		// Text views for the status of the pose data and Tango library versions
+		mPoseStatusTextView = (TextView) findViewById(R.id.status);
+		mTangoServiceVersionTextView = (TextView) findViewById(R.id.version);
+		mApplicationVersionTextView = (TextView) findViewById(R.id.appversion);
+
+		// Set up button click listeners
+		mMotionResetButton.setOnClickListener(this);
+
+		// The Auto-Recovery ToggleButton sets a boolean variable to determine
+		// if the
+		// Tango service should automatically attempt to recover when
+		// / MotionTrackingActivity enters an invalid state.
+		if (mIsAutoRecovery) {
+			mConfig.putBoolean(TangoConfig.KEY_BOOLEAN_AUTORECOVERY, true);
+			Log.i(TAG, "Auto Reset On!!!");
+		} else {
+			mConfig.putBoolean(TangoConfig.KEY_BOOLEAN_AUTORECOVERY, false);
+			Log.i(TAG, "Auto Reset Off!!!");
+		}
+
+		mApplicationVersionTextView.setText("OpenGL 2.0");
+		// Display the library version for debug purposes
+		mTangoServiceVersionTextView.setText(mConfig.getString("tango_service_library_version"));
+
+	}
+
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+
+		if(OPENGL_VERSION==1.0) setUpOpenGL10();
+		if(OPENGL_VERSION==2.0) setUpOpenGL20();
+		
 
 	}
 
