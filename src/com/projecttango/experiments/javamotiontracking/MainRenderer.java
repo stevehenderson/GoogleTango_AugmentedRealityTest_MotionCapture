@@ -1,32 +1,28 @@
 package com.projecttango.experiments.javamotiontracking;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
-import java.util.List;
-
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-import com.google.atap.tangoservice.Tango;
-import com.google.atap.tangoservice.TangoConfig;
-
 import android.content.Context;
 import android.graphics.SurfaceTexture;
-import android.hardware.Camera;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.util.Log;
-import android.view.Surface;
-import android.view.SurfaceHolder;
 
-//Renderer: http://maninara.blogspot.com/2012/09/render-camera-preview-using-opengl-es.html
-public class MainRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFrameAvailableListener {
-	
+/*
+ * An OpenGL 2.0 renderer.  A simple clear scene
+ * 
+ * Based on:  http://maninara.blogspot.com/2012/09/render-camera-preview-using-opengl-es.html
+ * 
+ */
+public class MainRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFrameAvailableListener, DemoRenderer {
+
 	private static final String TAG = MainRenderer.class.getSimpleName();
-	
+
 	private final String vss =
 			"attribute vec2 vPosition;\n" +
 					"attribute vec2 vTexCoord;\n" +
@@ -50,17 +46,15 @@ public class MainRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFr
 	private FloatBuffer pTexCoord;
 	private int hProgram;
 
-	//private Camera mCamera;
 	private SurfaceTexture mSTexture;
 
 	private boolean mUpdateST = false;
 
-    private Context context;
-
-
+	float x,y,z;
+	float qx,qy,qz,qw;
 
 	public MainRenderer (Context context) {
-		
+
 		float[] vtmp = { 1.0f, -1.0f, -1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f };
 		float[] ttmp = { 1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f };
 		pVertex = ByteBuffer.allocateDirect(8*4).order(ByteOrder.nativeOrder()).asFloatBuffer();
@@ -69,18 +63,36 @@ public class MainRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFr
 		pTexCoord = ByteBuffer.allocateDirect(8*4).order(ByteOrder.nativeOrder()).asFloatBuffer();
 		pTexCoord.put ( ttmp );
 		pTexCoord.position(0);
-		this.context = context;
-		
+
 	}
+
+
+
+	/*
+	 * Set the camera position
+	 */
+	public void setCameraPosition(float x, float y, float z) {
+		this.x=x;
+		this.y=y;
+		this.z=z;
+	}
+
+	/*
+	 * Set the camera Euler angles
+	 */
+	public void setCameraAngles(float x, float y, float z, float w) {
+		this.qx=x;
+		this.qy=y;
+		this.qz=z;
+		this.qw=w;
+	}
+
 
 	public void close()
 	{
 		mUpdateST = false;
 		mSTexture.release();
-		//mCamera.stopPreview();
-		//mCamera = null;
 		deleteTex();
-	
 	}
 
 	public void onSurfaceCreated ( GL10 unused, EGLConfig config ) {
@@ -92,13 +104,11 @@ public class MainRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFr
 		mSTexture = new SurfaceTexture ( hTex[0] );
 		mSTexture.setOnFrameAvailableListener(this);
 
-		
+
 		//GLES20.glClearColor ( 1.0f, 1.0f, 0.0f, 1.0f );
 
 		hProgram = loadShader ( vss, fss );
-		
-	
-		
+
 	}
 
 	public void onDrawFrame ( GL10 unused ) {
@@ -133,9 +143,7 @@ public class MainRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFr
 
 	public void onSurfaceChanged ( GL10 unused, int width, int height ) {
 		GLES20.glViewport( 0, 0, width, height );
-		
-		
-	
+
 	}
 
 	private void initTex() {
@@ -154,7 +162,7 @@ public class MainRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFr
 
 	public synchronized void onFrameAvailable ( SurfaceTexture st ) {
 		mUpdateST = true;
-		
+
 	}
 
 	private static int loadShader ( String vss, String fss ) {
@@ -189,5 +197,5 @@ public class MainRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFr
 		return program;
 	}
 
-	
+
 }

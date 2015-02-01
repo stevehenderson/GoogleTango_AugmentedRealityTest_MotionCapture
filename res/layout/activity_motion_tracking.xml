@@ -152,39 +152,6 @@
     </LinearLayout>
 
     <Button
-        android:id="@+id/first_person_button"
-        android:layout_width="100dp"
-        android:layout_height="wrap_content"
-        android:layout_above="@+id/third_person_button"
-        android:layout_alignParentRight="true"
-        android:layout_marginBottom="5dp"
-        android:layout_marginRight="5dp"
-        android:paddingRight="5dp"
-        android:text="@string/first_person" />
-
-    <Button
-        android:id="@+id/top_down_button"
-        android:layout_width="100dp"
-        android:layout_height="wrap_content"
-        android:layout_alignLeft="@+id/third_person_button"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentRight="true"
-        android:layout_marginRight="5dp"
-        android:paddingRight="5dp"
-        android:text="@string/top_down" />
-
-    <Button
-        android:id="@+id/third_person_button"
-        android:layout_width="100dp"
-        android:layout_height="wrap_content"
-        android:layout_above="@+id/top_down_button"
-        android:layout_alignParentRight="true"
-        android:layout_marginBottom="5dp"
-        android:layout_marginRight="5dp"
-        android:paddingRight="5dp"
-        android:text="@string/third_person" />
-
-    <Button
         android:id="@+id/resetmotion"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -192,6 +159,14 @@
         android:layout_alignParentLeft="true"
         android:layout_marginLeft="5dp"
         android:text="@string/resetmotiontracking" />
-  
+    
+    <Button
+        android:id="@+id/dropbox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:layout_marginLeft="5dp"
+        android:text="@string/dropbox" />
 
 </RelativeLayout>

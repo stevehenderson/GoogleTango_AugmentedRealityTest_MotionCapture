@@ -17,17 +17,23 @@ class Cube {
     private FloatBuffer mVertexBuffer;
     private FloatBuffer mColorBuffer;
     private ByteBuffer  mIndexBuffer;
-        
+    
+    /*
+     * Relative size of the cube
+     */
+    public final static float d = 0.05f;
+    
     private float vertices[] = {
-                                -1.0f, -1.0f, -1.0f,
-                                1.0f, -1.0f, -1.0f,
-                                1.0f,  1.0f, -1.0f,
-                                -1.0f, 1.0f, -1.0f,
-                                -1.0f, -1.0f,  1.0f,
-                                1.0f, -1.0f,  1.0f,
-                                1.0f,  1.0f,  1.0f,
-                                -1.0f,  1.0f,  1.0f
-                                };
+            -d, -d, -d,
+            d, -d, -d,
+            d,  d, -d,
+            -d, d, -d,
+            -d, -d,  d,
+            d, -d,  d,
+            d,  d,  d,
+            -d,  d,  d
+            };
+    
     private float colors[] = {
                                0.0f,  1.0f,  0.0f,  1.0f,
                                0.0f,  1.0f,  0.0f,  1.0f,

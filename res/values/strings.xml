@@ -32,12 +32,15 @@
     <string name="third_person">Third</string>
     <string name="top_down">Top</string>
     <string name="start">Start</string>
+    <string name="opengl1">OpenGL 1.0</string>
+    <string name="opengl2">OpenGL 2.0</string>
     <string name="autorecoveryon">Auto recovery on</string>
     <string name="autorecoveryoff">Auto recovery off</string>
     <string name="pointCount">Point count: </string>
     <string name="TangoError">"Tango exception! Try again!"</string>
     <string name="TangoOutOfDateException">"Tango service outdated!"</string>
-    <string name="resetmotiontracking">"Reset motion tracking"</string>
+    <string name="resetmotiontracking">"Reset Motion Tracking"</string>
+    <string name="dropbox">"Drop Position Marker"</string>
     <string name="motiontrackingpermission">"Motion Tracking permission needed!"</string>
     <string name="NA">"N/A"</string>
     <string name="pose_initializing">"initializing"</string>

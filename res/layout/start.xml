@@ -18,18 +18,19 @@
     android:layout_height="match_parent"
     android:orientation="vertical" >
 
-    <ToggleButton
-        android:id="@+id/autoresetbutton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textOff="@string/autorecoveryoff"
-        android:textOn="@string/autorecoveryon" />
-
+    
     <Button
-        android:id="@+id/startbutton"
+        android:id="@+id/opengl1"
         style="?android:attr/buttonStyleSmall"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/start" />
+        android:text="@string/opengl1" />
+    
+    <Button
+        android:id="@+id/opengl2"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/opengl2" />
 
 </LinearLayout>

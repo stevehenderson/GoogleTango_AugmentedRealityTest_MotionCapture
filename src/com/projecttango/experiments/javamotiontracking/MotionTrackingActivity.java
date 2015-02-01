@@ -28,8 +28,6 @@ import com.google.atap.tangoservice.TangoXyzIjData;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager.NameNotFoundException;
 import android.graphics.PixelFormat;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
@@ -43,7 +41,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.Button;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -52,17 +49,19 @@ import java.util.ArrayList;
 
 /**
  * 
- * Modified Main Activity class from the Original Tango SDK  Motion Tracking API Sample. 
+ * Modified Main Activity class from the Original Google Tango SDK  Motion Tracking API Sample. 
  * 
  * Creates a GLSurfaceView for the OpenGL scene, which displays a cube
  * Then adds a SurfaceView for the camera image.  The surface is connected 
- * to the Tango camera.  This is neccesary if one wants to get point cloud
+ * to the Tango camera.  This is necessary if one wants to get point cloud
  * data from the Tango AND use the camera for video-see through Augmented Reality.
  * 
  * Lessons learned:  Ensure your onPause and onResume actions are handled correctly
  * in terms of disconnecting and reconnecting the Tango!!  If the Tango is not
  * disconnected and reconnected properly, you will get a black background and
  * may think the issue is something else.
+ * 
+ * @author  Steve Henderson @stevehenderson 
  * 
  */
 public class MotionTrackingActivity extends Activity implements View.OnClickListener, SurfaceHolder.Callback  {
@@ -79,32 +78,32 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
 	private TextView mTangoServiceVersionTextView;
 	private TextView mApplicationVersionTextView;
 	private TextView mTangoEventTextView;
-	private Button mMotionResetButton;
 	private float mPreviousTimeStamp;
 	private int mPreviousPoseStatus;
 	private int count;
 	private float mDeltaTime;
-	private boolean mIsAutoRecovery;
-	//private GLClearRenderer mRenderer;
-	private MainRenderer mMainRenderer;
+	private Button mMotionResetButton;
+	private Button mDropBoxButton;
+	//private boolean mIsAutoRecovery;
+
+	private OpenGL2Renderer mOpenGL2Renderer;
 	private GLClearRenderer mClearRenderer;
-	
+	private DemoRenderer mDemoRenderer;
 	private GLSurfaceView mGLView;
 	private SurfaceHolder surfaceHolder;
 	private SurfaceView surfaceView;
 
 	boolean first_initialized = false;
 
+	double mOpenGLVersion = 1.0;
 
-	/*
-	 * Static primitive to set the OPENGL Version.
-	 * Values = {1.0, 2.0}
-	 */
-	private final static double OPENGL_VERSION = 2.0;
+	Vector3f lastPosition;
+	Vector3f dropBoxPosition;
 
 	/**
 	 * Set up the activity using OpenGL 10
 	 */
+	@SuppressWarnings("deprecation")
 	private void setUpOpenGL10() {
 
 		///////////////////////
@@ -120,6 +119,7 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
 		mClearRenderer = new GLClearRenderer();
 		//mGLView.setEGLContextClientVersion(2);
 		mGLView.setRenderer(mClearRenderer);
+		mDemoRenderer = mClearRenderer;
 		setContentView(mGLView);
 
 		////////////////////////////////////
@@ -157,65 +157,34 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
 		getWindow().addContentView(tmpView, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT,
 				ViewGroup.LayoutParams.FILL_PARENT)); 
 
-		Intent intent = getIntent();
-		mIsAutoRecovery = intent.getBooleanExtra(StartActivity.KEY_MOTIONTRACKING_AUTORECOVER,
-				false);
-		// Text views for displaying translation and rotation data
-		mPoseTextView = (TextView) findViewById(R.id.pose);
-		mQuatTextView = (TextView) findViewById(R.id.quat);
-		mPoseCountTextView = (TextView) findViewById(R.id.posecount);
-		mDeltaTextView = (TextView) findViewById(R.id.deltatime);
-		mTangoEventTextView = (TextView) findViewById(R.id.tangoevent);
+	
+		mApplicationVersionTextView = (TextView) findViewById(R.id.appversion);
 
-		// Buttons for selecting camera view and Set up button click listeners
-		//NOTE:  BUTTONS ARE NOT USED IN THE CODE
-		findViewById(R.id.first_person_button).setOnClickListener(this);
-		findViewById(R.id.third_person_button).setOnClickListener(this);
-		findViewById(R.id.top_down_button).setOnClickListener(this);
+		mApplicationVersionTextView.setText("OpenGL 1.0");
 
 		// Button to reset motion tracking
 		mMotionResetButton = (Button) findViewById(R.id.resetmotion);
-
-		// Text views for the status of the pose data and Tango library versions
-		mPoseStatusTextView = (TextView) findViewById(R.id.status);
-		mTangoServiceVersionTextView = (TextView) findViewById(R.id.version);
-		mApplicationVersionTextView = (TextView) findViewById(R.id.appversion);
-
 		// Set up button click listeners
 		mMotionResetButton.setOnClickListener(this);
 
-		// The Auto-Recovery ToggleButton sets a boolean variable to determine
-		// if the
-		// Tango service should automatically attempt to recover when
-		// / MotionTrackingActivity enters an invalid state.
-		if (mIsAutoRecovery) {
-			mConfig.putBoolean(TangoConfig.KEY_BOOLEAN_AUTORECOVERY, true);
-			Log.i(TAG, "Auto Reset On!!!");
-		} else {
-			mConfig.putBoolean(TangoConfig.KEY_BOOLEAN_AUTORECOVERY, false);
-			Log.i(TAG, "Auto Reset Off!!!");
-		}
-		
-		mApplicationVersionTextView.setText("OpenGL 1.0");
-
-	
-		// Display the library version for debug purposes
-		mTangoServiceVersionTextView.setText(mConfig.getString("tango_service_library_version"));
+		// Button to drop position box (breadcrumb cube)
+		mDropBoxButton = (Button) findViewById(R.id.dropbox);
+		// Set up button click listeners
+		mDropBoxButton.setOnClickListener(this);
 
 	}
-
 
 
 	/**
 	 * Set up the activity using OpenGL 20
 	 */
+	@SuppressWarnings("deprecation")
 	private void setUpOpenGL20() {
 
 		///////////////////////
 		//Create GLSurface
 		///////////////////////
 		// OpenGL view where all of the graphics are drawn
-		//mGLView = (GLSurfaceView) findViewById(R.id.gl_surface_view);
 		mGLView = new GLSurfaceView(this);
 		mGLView.setEGLContextClientVersion(2);
 		//mGLView.setZOrderOnTop(true);
@@ -224,10 +193,10 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
 		surfaceHolder.setFormat(PixelFormat.TRANSLUCENT);
 		// Configure OpenGL renderer
 		//mRenderer = new GLClearRenderer();
-		mMainRenderer = new MainRenderer(this);
+		mOpenGL2Renderer = new OpenGL2Renderer();
 
-
-		mGLView.setRenderer(mMainRenderer);
+		mDemoRenderer = mOpenGL2Renderer;
+		mGLView.setRenderer(mOpenGL2Renderer);
 		mGLView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
 		//setContentView(mGLView);
 
@@ -255,12 +224,14 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
 		surfaceView = new SurfaceView(this);
 		surfaceHolder = surfaceView.getHolder();
 		surfaceHolder.addCallback(this);
-		//setContentView(mGLView);
-		//addContentView( surfaceView, new LayoutParams( LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT ) );
-		setContentView(surfaceView);
-		addContentView( mGLView, new LayoutParams( LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT ) );
 
 
+		setContentView(mGLView);
+		addContentView( surfaceView, new LayoutParams( LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT ) );
+
+		//THIS ORDER WONT WORK
+		//setContentView(surfaceView);
+		//addContentView( mGLView, new LayoutParams( LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT ) );
 
 		/////////////////////////
 		//Create UI Objects 
@@ -271,48 +242,21 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
 		getWindow().addContentView(tmpView, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT,
 				ViewGroup.LayoutParams.FILL_PARENT)); 
 
-		Intent intent = getIntent();
-		mIsAutoRecovery = intent.getBooleanExtra(StartActivity.KEY_MOTIONTRACKING_AUTORECOVER,
-				false);
-		// Text views for displaying translation and rotation data
-		mPoseTextView = (TextView) findViewById(R.id.pose);
-		mQuatTextView = (TextView) findViewById(R.id.quat);
-		mPoseCountTextView = (TextView) findViewById(R.id.posecount);
-		mDeltaTextView = (TextView) findViewById(R.id.deltatime);
-		mTangoEventTextView = (TextView) findViewById(R.id.tangoevent);
 
-		// Buttons for selecting camera view and Set up button click listeners
-		//NOTE:  BUTTONS ARE NOT USED IN THE CODE
-		findViewById(R.id.first_person_button).setOnClickListener(this);
-		findViewById(R.id.third_person_button).setOnClickListener(this);
-		findViewById(R.id.top_down_button).setOnClickListener(this);
+		mApplicationVersionTextView = (TextView) findViewById(R.id.appversion);
+
+		mApplicationVersionTextView.setText("OpenGL 2.0");
 
 		// Button to reset motion tracking
 		mMotionResetButton = (Button) findViewById(R.id.resetmotion);
-
-		// Text views for the status of the pose data and Tango library versions
-		mPoseStatusTextView = (TextView) findViewById(R.id.status);
-		mTangoServiceVersionTextView = (TextView) findViewById(R.id.version);
-		mApplicationVersionTextView = (TextView) findViewById(R.id.appversion);
-
 		// Set up button click listeners
 		mMotionResetButton.setOnClickListener(this);
 
-		// The Auto-Recovery ToggleButton sets a boolean variable to determine
-		// if the
-		// Tango service should automatically attempt to recover when
-		// / MotionTrackingActivity enters an invalid state.
-		if (mIsAutoRecovery) {
-			mConfig.putBoolean(TangoConfig.KEY_BOOLEAN_AUTORECOVERY, true);
-			Log.i(TAG, "Auto Reset On!!!");
-		} else {
-			mConfig.putBoolean(TangoConfig.KEY_BOOLEAN_AUTORECOVERY, false);
-			Log.i(TAG, "Auto Reset Off!!!");
-		}
+		// Button to drop position box (breadcrumb cube)
+		mDropBoxButton = (Button) findViewById(R.id.dropbox);
+		// Set up button click listeners
+		mDropBoxButton.setOnClickListener(this);
 
-		mApplicationVersionTextView.setText("OpenGL 2.0");
-		// Display the library version for debug purposes
-		mTangoServiceVersionTextView.setText(mConfig.getString("tango_service_library_version"));
 
 	}
 
@@ -320,17 +264,37 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		Intent intent = getIntent();
+		mOpenGLVersion  = intent.getDoubleExtra(StartActivity.OPENGL_VERSION, 1.0);
+		if(mOpenGLVersion==1.0) {
+			setUpOpenGL10();
+		} else {
+			setUpOpenGL20();
+		}
+		// Text views for displaying translation and rotation data
+		mPoseTextView = (TextView) findViewById(R.id.pose);
+		mQuatTextView = (TextView) findViewById(R.id.quat);
+		mPoseCountTextView = (TextView) findViewById(R.id.posecount);
+		mDeltaTextView = (TextView) findViewById(R.id.deltatime);
+		mTangoEventTextView = (TextView) findViewById(R.id.tangoevent);
 
-		if(OPENGL_VERSION==1.0) setUpOpenGL10();
-		if(OPENGL_VERSION==2.0) setUpOpenGL20();
+		// Text views for the status of the pose data and Tango library versions
+		mPoseStatusTextView = (TextView) findViewById(R.id.status);
+		mTangoServiceVersionTextView = (TextView) findViewById(R.id.version);
+
+		// Display the library version for debug purposes
+		mTangoServiceVersionTextView.setText(mConfig.getString("tango_service_library_version"));
 		
-
+		dropBoxPosition = new Vector3f();
+		lastPosition = new Vector3f();
 	}
-
-
 
 	private void motionReset() {
 		mTango.resetMotionTracking();
+	}
+
+	private void dropBox() {
+		dropBoxPosition.setTo(lastPosition);
 	}
 
 	@Override
@@ -382,17 +346,11 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
 	@Override
 	public void onClick(View v) {
 		switch (v.getId()) {
-		case R.id.first_person_button:
-			//mRenderer.setFirstPersonView();
-			break;
-		case R.id.top_down_button:
-			//mRenderer.setTopDownView();
-			break;
-		case R.id.third_person_button:
-			//mRenderer.setThirdPersonView();
-			break;
 		case R.id.resetmotion:
 			motionReset();
+			break;
+		case R.id.dropbox:
+			dropBox();
 			break;
 		default:
 			Log.w(TAG, "Unknown button click");
@@ -402,6 +360,7 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
 
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
+
 		return false; 
 	}
 
@@ -424,7 +383,7 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
 			@Override
 			public void onPoseAvailable(final TangoPoseData pose) {
 				// Log whenever Motion Tracking enters a n invalid state
-				if (!mIsAutoRecovery && (pose.statusCode == TangoPoseData.POSE_INVALID)) {
+				if (pose.statusCode == TangoPoseData.POSE_INVALID) {
 					Log.w(TAG, "Invalid State");
 				}
 				if (mPreviousPoseStatus != pose.statusCode) {
@@ -438,7 +397,7 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
 				// data
 				float[] translation = pose.getTranslationAsFloats();
 
-				//mGLView.requestRender();
+				mGLView.requestRender();
 
 				// Update the UI with TangoPose information
 				runOnUiThread(new Runnable() {
@@ -452,6 +411,21 @@ public class MotionTrackingActivity extends Activity implements View.OnClickList
 								+ threeDec.format(pose.rotation[1]) + ", "
 								+ threeDec.format(pose.rotation[2]) + ", "
 								+ threeDec.format(pose.rotation[3]) + "] ";
+
+						float x = (float) pose.translation[0];
+						float y = (float) pose.translation[1];
+						float z = (float) pose.translation[2];
+
+						mDemoRenderer.setCameraPosition(x-dropBoxPosition.x, y-dropBoxPosition.y, z-dropBoxPosition.z);
+
+						lastPosition.setTo(x, y, z);
+
+						float qx = (float) pose.rotation[0];
+						float qy = (float) pose.rotation[1];
+						float qz = (float) pose.rotation[2];
+						float qw = (float) pose.rotation[3];
+
+						mDemoRenderer.setCameraAngles(qx, qy, qz, qw);
 
 						// Display pose data on screen in TextViews
 						//Log.i(TAG,translationString);
