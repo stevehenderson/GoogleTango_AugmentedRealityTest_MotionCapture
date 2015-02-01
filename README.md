@@ -6,6 +6,7 @@ The demo is not a validated AR application and is only to demonstrate (a) how to
 
 The Camera and Tango need careful calibration to ensure the Augented Reality registration is as accurate as possible.
 
+YouTube demo:  http://youtu.be/mwLznQ3lJ3s
 
 
 ![ScreenShot](screenshot.jpg)
